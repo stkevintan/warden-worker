@@ -1,0 +1,40 @@
+name: Sync Fork from Upstream
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run daily at 03:30 UTC
+    - cron: "30 3 * * *"
+
+jobs:
+  sync-upstream:
+    name: Sync main from upstream
+    if: github.repository != 'qaz741wsd856/warden-worker'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync fork with upstream
+        run: |
+          set -euo pipefail
+
+          if git remote get-url upstream >/dev/null 2>&1; then
+            git remote set-url upstream https://github.com/qaz741wsd856/warden-worker.git
+          else
+            git remote add upstream https://github.com/qaz741wsd856/warden-worker.git
+          fi
+
+          git fetch upstream main
+          git checkout main
+          git merge --ff-only upstream/main
+          git push origin main
